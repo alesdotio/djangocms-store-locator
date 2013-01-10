@@ -5,6 +5,15 @@ django CMS Store locator
 A simple store locator plugin for django CMS that uses Google Maps.
 The code is heavily inspired by a similar plugin by Mark Ransom, https://github.com/MegaMark16/django-cms-storelocator.
 
+Features
+========
+
+* django CMS Plugin displays a google map with locations
+* search for locations in range of an address
+* locations can be grouped and searched by location types
+* setting for kilometers or miles
+
+
 Installation
 ============
 
@@ -24,7 +33,7 @@ Usage
 =====
 
 * add some locations in the admin
-* insert the Store Locator Map Plugin on a page
+* insert the "Store Locator Plugin" on a page
 
 
 Optional settings
