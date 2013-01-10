@@ -1,0 +1,59 @@
+{% load i18n sekizai_tags static %}
+
+<div class="locations_search_fields">
+    <form>
+        <input type="text" id="locations_search_field" />
+        {% if instance.show_distance %}
+	        <select id="distance_field">
+	            {% for distance in distance_choices %}
+	            <option value="{{ distance.0 }}" {% if instance.default_distance == distance.0 %}selected="selected"{% endif %}>{{ distance.1 }}</option>
+	            {% endfor %}
+	        </select>
+        {% else %}
+            <input type="hidden" id="distance_field" value="9999" />
+        {% endif %}
+        <input type="submit" onClick="location_search(); return false;" value="{% trans 'Search' %}" class="btn">
+        <ul class="location_types_list">
+        {% for type in instance.show_location_types.all %}
+            <li>
+                <input {% if forloop.first %}checked="checked" {% endif %}name="location_type_{{ instance.id }}" type="radio" class="location_type" id="type_{{ type.id }}" value="{{ type.id }}">
+                <label for="type_{{ type.id }}">{{ type.name }}</label>
+            </li>
+        {% empty %}
+            {% if location_types %}
+	            {% for type in location_types %}
+	            <li>
+	                <input name="location_type_{{ instance.id }}" type="radio" class="location_type" id="type_{{ type.id }}" value="{{ type.id }}">
+	                <label for="type_{{ type.id }}">{{ type.name }}</label>
+	            </li>
+	            {% endfor %}
+	            <li>
+	                <input name="location_type_{{ instance.id }}" checked="checked" type="radio" class="location_type" id="type_all" value="">
+	                <label for="type_all">{% trans 'All' %}</label>
+	            </li>
+            {% else %}
+                <input type="hidden" name="location_type_{{ instance.id }}" value="">
+            {% endif %}
+        {% endfor %}
+        </ul>
+    </form>
+</div>
+<div class="clearfix">
+	<div class="grid_13 alpha">
+	    <div id="map_canvas" class="locations_map" style="width: 100%; height:420px"></div>
+	</div>
+    <div class="grid_5 omega">
+        <ul class="location_list"></ul>
+    </div>
+</div>
+
+{% addtoblock 'js' %}<script src="http://maps.googleapis.com/maps/api/js?sensor=true"></script>{% endaddtoblock %}
+{% addtoblock 'js' %}
+<script>
+    var get_lat_long_url = "{{ get_lat_long_url }}";
+    var get_locations_url = "{{ get_locations_url }}";
+    var starting_location = "{{ instance.starting_location|default:'zurich, ch' }}";
+    var starting_zoom = {{ instance.default_distance }};
+</script>
+{% endaddtoblock %}
+{% addtoblock 'js' %}<script src="{% static "djangocms_store_locator/js/store_locator_map.js" %}"></script>{% endaddtoblock %}
