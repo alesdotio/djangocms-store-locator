@@ -17,7 +17,7 @@ Features
 Installation
 ============
 
-* ``pip install djangocms_store_locator`` (requires ``django-filer`` and ``django-sekizai``)
+* ``pip install djangocms-store-locator`` (requires ``django-filer`` and ``django-sekizai``)
 * add ``'djangocms_store_locator'`` to your INSTALLED_APPS
 * ``python manage.py syncdb`` or ``python manage.py migrate djangocms_store_locator`` if you are using South
 * add something like this to your urls.py
