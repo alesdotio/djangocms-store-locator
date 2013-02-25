@@ -1,16 +1,25 @@
 import urllib2
-import urllib 
 import json
+import logging
 from django.http import HttpResponse
+from django.utils.http import urlencode
 from djangocms_store_locator.models import Location
+
+logger = logging.getLogger('djangocms.storelocator')
 
 
 def get_lat_long(request):
-    if not request.GET.get('q'):
-        return HttpResponse('')
-    args = urllib.urlencode({'q': request.GET.get('q')})
-    r = urllib2.urlopen("http://maps.google.com/maps/geo?output=csv&%s" % args)
-    return HttpResponse(r.read())
+    args = urlencode({'address': request.GET.get('q', ''), 'sensor': 'false'})
+    r = urllib2.urlopen("http://maps.googleapis.com/maps/api/geocode/json?%s" % args)
+    data = json.loads(r.read())
+    if data['status'] == 'OK':
+        location = data['results'][0]['geometry']['location']
+        latlong = location['lat'], location['lng']
+    else:
+        if data['status'] == 'OVER_QUERY_LIMIT':
+            logger.error('Google Maps Geocoding over limit!')
+        latlong = ('', '')
+    return HttpResponse(','.join(map(str, latlong)))
 
 
 def get_locations(request):

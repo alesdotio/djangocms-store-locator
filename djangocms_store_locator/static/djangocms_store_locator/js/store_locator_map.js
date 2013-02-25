@@ -43,8 +43,8 @@ function location_search() {
         new_zoom = zoom_list[starting_zoom];    
     }
     $.get(get_lat_long_url + "?q=" + search_value, function(data) {
-        var latitude = data.split(',')[2];
-        var longitude = data.split(',')[3];
+        var latitude = data.split(',')[0];
+        var longitude = data.split(',')[1];
         map.setZoom(new_zoom);
         /*var marker = new google.maps.Marker({
             position: new google.maps.LatLng(latitude, longitude),
@@ -68,7 +68,7 @@ function location_search() {
                 location_info = this;
                 var location_marker = new google.maps.Marker({
                     position: new google.maps.LatLng(location_info.latitude, location_info.longitude),
-                    title: location_info.name,
+                    title: location_info.name
                 });
                 location_marker.setMap(map);
                 location_marker.location_id = location_info.id;
