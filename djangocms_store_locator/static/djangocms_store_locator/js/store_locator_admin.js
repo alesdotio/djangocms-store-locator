@@ -16,8 +16,8 @@ $j(document).ready(function() {
 		e.preventDefault();
 		var address = $j("textarea#id_address").val().replace(/\n/g, ', ').replace('\n', ', ');
 		$j.get(get_lat_long_url + address, function(data, code) {
-			$j("input#id_latitude").val(data.split(",")[2]);
-			$j("input#id_longitude").val(data.split(",")[3]);
+			$j("input#id_latitude").val(data.split(",")[0]);
+			$j("input#id_longitude").val(data.split(",")[1]);
 		});
 	});
 });
