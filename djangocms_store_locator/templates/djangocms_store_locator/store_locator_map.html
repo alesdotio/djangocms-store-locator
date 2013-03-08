@@ -1,7 +1,7 @@
 {% load i18n sekizai_tags static %}
 
 <div class="locations_search_fields">
-    <form>
+    <form class="frm">
         <input type="text" id="locations_search_field" />
         {% if instance.show_distance %}
 	        <select id="distance_field">
@@ -15,12 +15,16 @@
         <input type="submit" onClick="location_search(); return false;" value="{% trans 'Search' %}" class="btn">
         <ul class="location_types_list">
         {% for type in instance.show_location_types.all %}
-            <li>
-                <input {% if forloop.first %}checked="checked" {% endif %}name="location_type_{{ instance.id }}" type="radio" class="location_type" id="type_{{ type.id }}" value="{{ type.id }}">
-                <label for="type_{{ type.id }}">{{ type.name }}</label>
-            </li>
+			{% if instance.show_location_types.all|length > 1 %}
+				<li>
+					<input {% if forloop.first %}checked="checked" {% endif %}name="location_type_{{ instance.id }}" type="radio" class="location_type" id="type_{{ type.id }}" value="{{ type.id }}">
+					<label for="type_{{ type.id }}">{{ type.name }}</label>
+				</li>
+			{% else %}
+            	<input type="hidden" name="location_type_{{ instance.id }}" value="">
+			{% endif %}
         {% empty %}
-            {% if location_types %}
+            {% if location_types and location_types|length > 1 %}
 	            {% for type in location_types %}
 	            <li>
 	                <input name="location_type_{{ instance.id }}" type="radio" class="location_type" id="type_{{ type.id }}" value="{{ type.id }}">
