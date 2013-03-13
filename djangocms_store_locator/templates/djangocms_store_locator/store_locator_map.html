@@ -1,63 +1,222 @@
 {% load i18n sekizai_tags static %}
 
 <div class="locations_search_fields">
-    <form class="frm">
-        <input type="text" id="locations_search_field" />
-        {% if instance.show_distance %}
-	        <select id="distance_field">
-	            {% for distance in distance_choices %}
-	            <option value="{{ distance.0 }}" {% if instance.default_distance == distance.0 %}selected="selected"{% endif %}>{{ distance.1 }}</option>
-	            {% endfor %}
-	        </select>
-        {% else %}
-            <input type="hidden" id="distance_field" value="9999" />
-        {% endif %}
-        <input type="submit" onClick="location_search(); return false;" value="{% trans 'Search' %}" class="btn">
-        <ul class="location_types_list">
-        {% for type in instance.show_location_types.all %}
-			{% if instance.show_location_types.all|length > 1 %}
-				<li>
-					<input {% if forloop.first %}checked="checked" {% endif %}name="location_type_{{ instance.id }}" type="radio" class="location_type" id="type_{{ type.id }}" value="{{ type.id }}">
-					<label for="type_{{ type.id }}">{{ type.name }}</label>
-				</li>
+	<form class="frm">
+		<input type="text" id="locations_search_field" class="input-text" />
+		{% if instance.show_distance %}
+			<select id="distance_field" class="input-select">
+				{% for distance in distance_choices %}
+				<option value="{{ distance.0 }}" {% if instance.default_distance == distance.0 %}selected="selected"{% endif %}>{{ distance.1 }}</option>
+				{% endfor %}
+			</select>
+		{% else %}
+			<input type="hidden" id="distance_field" value="9999" />
+		{% endif %}
+		<input type="submit" onClick="location_search(); return false;" value="{% trans 'Search' %}" class="btn">
+		<ul class="location_types_list">
+			{% if location_types_selected and location_types %}
+				{# location types are selected in the plugin #}
+				{% if location_types|length > 1 %}
+					{# if there is more than one, display radio buttons #}
+					{% for type in location_types %}
+					<li>
+						<input {% if forloop.first %}checked="checked" {% endif %}name="location_type_{{ instance.id }}" type="radio" class="location_type" id="type_{{ type.id }}" value="{{ type.id }}">
+						<label for="type_{{ type.id }}">{{ type.name }}</label>
+					</li>
+					{% endfor %}
+					{% comment %}
+					{# TODO: fix bug: selecting "all" would show locations of ALL types, even those that are not selected in the current plugin #}
+					<li>
+						<input name="location_type_{{ instance.id }}" checked="checked" type="radio" class="location_type" id="type_all" value="">
+						<label for="type_all">{% trans 'All' %}</label>
+					</li>
+					{% endcomment %}
+				{% else %}
+					{# if there is only one location type, there is no point of showing a lonely radio button #}
+					{% for type in location_types %}{% if forloop.first %}<input type="hidden" name="location_type_{{ instance.id }}" value="{{ type.id }}">{% endif %}{% endfor %}
+				{% endif %}
 			{% else %}
-            	<input type="hidden" name="location_type_{{ instance.id }}" value="">
+				{# no location types, or no location types selected in the plugin will result in displaying all location types #}
+				<input type="hidden" name="location_type_{{ instance.id }}" value="">
 			{% endif %}
-        {% empty %}
-            {% if location_types and location_types|length > 1 %}
-	            {% for type in location_types %}
-	            <li>
-	                <input name="location_type_{{ instance.id }}" type="radio" class="location_type" id="type_{{ type.id }}" value="{{ type.id }}">
-	                <label for="type_{{ type.id }}">{{ type.name }}</label>
-	            </li>
-	            {% endfor %}
-	            <li>
-	                <input name="location_type_{{ instance.id }}" checked="checked" type="radio" class="location_type" id="type_all" value="">
-	                <label for="type_all">{% trans 'All' %}</label>
-	            </li>
-            {% else %}
-                <input type="hidden" name="location_type_{{ instance.id }}" value="">
-            {% endif %}
-        {% endfor %}
-        </ul>
-    </form>
+		</ul>
+	</form>
 </div>
 <div class="clearfix">
 	<div class="grid-13 alpha">
-	    <div id="map_canvas" class="locations_map" style="width: 100%; height:420px"></div>
+		<div id="map_canvas" class="locations_map" style="width: 100%; height:420px"></div>
 	</div>
-    <div class="grid-5 omega">
-        <ul class="location_list"></ul>
-    </div>
+	<div class="grid-5 omega">
+		<ul class="location_list"></ul>
+	</div>
 </div>
 
 {% addtoblock 'js' %}<script src="http://maps.googleapis.com/maps/api/js?sensor=true"></script>{% endaddtoblock %}
 {% addtoblock 'js' %}
 <script>
-    var get_lat_long_url = "{{ get_lat_long_url }}";
-    var get_locations_url = "{{ get_locations_url }}";
-    var starting_location = "{{ instance.starting_location|default:'zurich, ch' }}";
-    var starting_zoom = {{ instance.default_distance }};
+	var get_lat_long_url = "{{ get_lat_long_url }}";
+	var get_locations_url = "{{ get_locations_url }}";
+	var starting_location = "{{ instance.starting_location|default:'zurich, ch' }}";
+	var starting_zoom = {{ instance.default_distance }};
+	var append_to_search = "{{ instance.append_to_search }}";
+
+	var zoom_list = {
+		"5" : 12,
+		"10" : 11,
+		"20" : 10,
+		"50" : 9,
+		"100" : 8,
+		"200" : 7,
+		"500" : 6
+	};
+
+	var markers = new Array;
+	var latlng = new google.maps.LatLng(45.3894308,5.5415236);
+	var myOptions = {
+		zoom: zoom_list[starting_zoom],
+		center: latlng,
+		mapTypeId: google.maps.MapTypeId.ROADMAP
+	};
+	var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+	var infoWindow = new google.maps.InfoWindow();
+	var search_value = '';
+
+	$(document).ready(function() {
+		location_search();
+	});
+
+	document.map = map;
+	function clear_markers() {
+		for (var i in markers) {
+			markers[i].setMap(null);
+		}
+		markers.length = 0;
+	}
+
+	function location_search() {
+		search_value = $("#locations_search_field").val();
+		if (search_value.trim() == '') {
+			search_value = starting_location;
+		}
+		search_value += ', '+append_to_search;
+		clear_markers();
+		var distance = $("#distance_field").val();
+		var new_zoom = zoom_list[distance];
+		if (new_zoom == undefined) {
+			new_zoom = zoom_list[starting_zoom];
+		}
+		$.get(get_lat_long_url + "?q=" + search_value, function(data) {
+			var latitude = data.split(',')[0];
+			var longitude = data.split(',')[1];
+			map.setZoom(new_zoom);
+			/*var marker = new google.maps.Marker({
+			 position: new google.maps.LatLng(latitude, longitude),
+			 title: search_value,
+			 });
+			 marker.setMap(map);
+			 markers.push(marker);*/
+			map.setCenter(new google.maps.LatLng(latitude, longitude));
+			var location_type = $("input[name=location_type_{{ instance.id }}]").val();
+			location_type = location_type === undefined ? '' : location_type;
+			var search_params = {
+				"lat" : latitude,
+				"long" : longitude,
+				"distance" : distance,
+				"location_type" : location_type
+			};
+			var search_url = get_locations_url;
+			$.getJSON(search_url, search_params, function(data) {
+				$(".location_list").children().remove();
+				$.each(data, function() {
+					location_info = this;
+					var location_marker = new google.maps.Marker({
+						position: new google.maps.LatLng(location_info.latitude, location_info.longitude),
+						title: location_info.name
+					});
+					location_marker.setMap(map);
+					location_marker.location_id = location_info.id;
+					markers.push(location_marker);
+					google.maps.event.addListener(location_marker, "click", get_location_marker_click_listener(location_info, location_marker));
+					render_location(location_info);
+				});
+			});
+		});
+	}
+
+	function render_location(location_info) {
+		var location_item = $("<li>");
+		var location_name = $("<a>", {
+			'href': '#',
+			'class': 'location_name',
+			html: location_info.name
+		});
+		$(location_name).click(function() {
+			var marker = markers.filter(function(marker) {
+				if (marker.location_id == location_info.id) {
+					return marker;
+				}
+			})[0];
+			google.maps.event.trigger(marker, "click");
+			return false;
+		});
+		$(location_item).append(location_name);
+		$(location_item).append(add_location_info_item(location_info, 'address'));
+//    $(location_item).append(add_location_info_item(location_info, 'phone', 'Phone'));
+//    if (location_info.url) {
+//        var website = $("<a>", {html: location_info.url, "href": location_info.url});
+//        $(location_item).append("<br />");
+//        var location_website_item = $("<span>",{
+//            'class': 'location_url',
+//            html: "Website: "
+//        });
+//        $(location_website_item).append(website);
+//        $(location_item).append(location_website_item);
+//    }
+//    $(location_item).append(add_location_info_item(location_info, 'description', 'Description'));
+		$(".location_list").append(location_item);
+	}
+
+	function add_location_info_item(location_info, item_name, item_label) {
+		if (location_info[item_name] != '') {
+			var return_info = $("<span>");
+			$(return_info).append("<br />");
+			if (item_label) {
+				$(return_info).append($("<span>",{
+					'class': 'location_' + item_name + '_label',
+					html: item_label + ": "
+				}));
+			}
+			$(return_info).append($("<span>",{
+				'class': 'location_' + item_name,
+				html: location_info[item_name].replace(/\r/g, "<br />")
+			}));
+			return return_info;
+		}
+	}
+
+	function get_location_marker_click_listener(location_info, location_marker) {
+		return function() {
+			var content = '';
+			if (location_info.image && location_info.image.length > 0) {
+				content += '<div><img src="'+location_info.image+'" alt="" style="max-width:200px; max-height:70px;" /></div>';
+			}
+			content += "<strong>" + location_info.name + "</strong><br>" +
+					location_info.address.replace(/\n/g, '<br />') + "<br>" +
+					"<a href='http://maps.google.com/maps?saddr=" + search_value + "&daddr=" + location_info.address.replace(/\r/g, ", ") + "'>Directions</a>";
+			if (location_info.url != '') {
+				content += "<br><strong>Website:</strong> <a href='" + location_info.url + "'>" + location_info.url + "</a>";
+			}
+			if (location_info.phone != '') {
+				content += "<br><strong>Phone:</strong> " + location_info.phone;
+			}
+			if (location_info.description != '') {
+				content += "<br><i> " + location_info.description + "</i>";
+			}
+
+			infoWindow.setContent(content);
+			infoWindow.open(map, location_marker);
+
+		}
+	}
 </script>
 {% endaddtoblock %}
-{% addtoblock 'js' %}<script src="{% static "djangocms_store_locator/js/store_locator_map.js" %}"></script>{% endaddtoblock %}
