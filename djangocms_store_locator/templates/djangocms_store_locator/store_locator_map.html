@@ -51,7 +51,7 @@
 	</div>
 </div>
 
-{% addtoblock 'js' %}<script src="http://maps.googleapis.com/maps/api/js?sensor=true"></script>{% endaddtoblock %}
+{% addtoblock 'js' %}<script src="//maps.googleapis.com/maps/api/js?sensor=true"></script>{% endaddtoblock %}
 {% addtoblock 'js' %}
 <script>
 	var get_lat_long_url = "{{ get_lat_long_url }}";
@@ -204,7 +204,7 @@
 					location_info.address.replace(/\n/g, '<br />') + "<br>" +
 					"<a href='http://maps.google.com/maps?saddr=" + search_value + "&daddr=" + location_info.address.replace(/\r/g, ", ") + "'>Directions</a>";
 			if (location_info.url != '') {
-				content += "<br><strong>Website:</strong> <a href='" + location_info.url + "'>" + location_info.url + "</a>";
+				content += "<br><strong>Website:</strong> <a href='" + location_info.url + "' target='_blank'>" + location_info.url + "</a>";
 			}
 			if (location_info.phone != '') {
 				content += "<br><strong>Phone:</strong> " + location_info.phone;
