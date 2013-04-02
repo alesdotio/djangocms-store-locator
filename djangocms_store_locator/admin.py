@@ -7,7 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 
 class LocationAdmin(admin.ModelAdmin):
     list_display = ('name', 'address', 'phone', 'url', 'has_image', 'active')
-    list_filter = ('active',)
+    list_filter = ('active', 'location_types')
     
     fieldsets = (
         (None, {
