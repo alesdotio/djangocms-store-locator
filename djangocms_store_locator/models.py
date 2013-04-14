@@ -1,9 +1,12 @@
-from filer.fields.image import FilerImageField
 import math
+
+from filer.fields.image import FilerImageField
 from django.db import models
 from cms.models import CMSPlugin
 from django.utils.translation import ugettext_lazy as _
+
 from djangocms_store_locator.settings import DISTANCE_CONSTANT, DISTANCE_CHOICES
+
 
 class LocationManager(models.Manager):
     def __init__(self):
@@ -86,3 +89,6 @@ class StoreLocator(CMSPlugin):
     append_to_search = models.CharField(max_length=255, blank=True, help_text="Search term to append at the end of the query.")
     show_distance = models.BooleanField(default=True, help_text="Disabling this will render all locations on the map regardless of zoom level")
     show_location_types = models.ManyToManyField(LocationType, blank=True, null=True)
+
+    def copy_relations(self, old_instance):
+        self.show_location_types = old_instance.show_location_types.all()
