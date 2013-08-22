@@ -86,3 +86,6 @@ class StoreLocator(CMSPlugin):
     append_to_search = models.CharField(max_length=255, blank=True, help_text="Search term to append at the end of the query.")
     show_distance = models.BooleanField(default=True, help_text="Disabling this will render all locations on the map regardless of zoom level")
     show_location_types = models.ManyToManyField(LocationType, blank=True, null=True)
+
+    def copy_relations(self, oldinstance):
+        self.show_location_types = oldinstance.show_location_types.all()
