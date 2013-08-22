@@ -1,9 +1,12 @@
-from filer.fields.image import FilerImageField
 import math
+
+from filer.fields.image import FilerImageField
 from django.db import models
 from cms.models import CMSPlugin
 from django.utils.translation import ugettext_lazy as _
+
 from djangocms_store_locator.settings import DISTANCE_CONSTANT, DISTANCE_CHOICES
+
 
 class LocationManager(models.Manager):
     def __init__(self):
