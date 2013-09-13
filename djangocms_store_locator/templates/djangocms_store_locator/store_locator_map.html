@@ -93,6 +93,13 @@
 		markers.length = 0;
 	}
 
+	// ie8 trim support
+	if(typeof String.prototype.trim !== 'function') {
+		String.prototype.trim = function() {
+			return this.replace(/^\s+|\s+$/g, '');
+		}
+	}
+
 	function location_search() {
 		search_value = $("#locations_search_field").val();
 		if (search_value.trim() == '') {
